@@ -1,18 +1,22 @@
 // server/index.js
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
 import { db, initDb } from "./db.js";
 import { sanitizeText } from "./sanitize.js";
 import { seedIfEmpty } from "./seedIfEmpty.js";
 
 const app = express();
+
+// --- basics
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
 initDb();
 
-// SEED AUTO : si la table est vide, on injecte tout ton contenu
+// --- seed auto
 seedIfEmpty()
   .then((r) => console.log("[seed]", r))
   .catch((e) => {
@@ -20,6 +24,7 @@ seedIfEmpty()
     process.exit(1);
   });
 
+// --- API routes
 app.get("/health", (_, res) => res.json({ ok: true }));
 
 app.get("/creatives", (req, res) => {
@@ -70,7 +75,6 @@ app.post("/creatives", (req, res) => {
     return res.status(400).json({ error: "Missing fields" });
   }
 
-  // URLs globales (ton besoin)
   const url_meta_tiktok = "https://linktr.ee/yafrica";
   const url_youtube =
     "https://www.youtube.com/playlist?list=PLSCwkooe6sD5jZothn-JbsfdWNl_2UCUk";
@@ -122,6 +126,22 @@ app.delete("/creatives/:id", (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ ok: true });
   });
+});
+
+// --- Serve frontend (VERY IMPORTANT)
+// Render hits "/" => we must serve client build
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// In the Docker image, we build the frontend in /app/client/dist
+const clientDistPath = path.resolve(__dirname, "../client/dist");
+
+// Serve static assets
+app.use(express.static(clientDistPath));
+
+// SPA fallback: always return index.html on unknown routes
+app.get("*", (req, res) => {
+  res.sendFile(path.join(clientDistPath, "index.html"));
 });
 
 const PORT = process.env.PORT || 10000;
