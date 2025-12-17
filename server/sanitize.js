@@ -1,17 +1,18 @@
+// server/sanitize.js
 export function sanitizeText(input = "") {
   return String(input)
-    // NBSP and narrow NBSP -> space
+    // NBSP + thin NBSP -> normal space
     .replace(/\u00A0|\u202F/g, " ")
-    // smart quotes -> straight quotes
+    // curly quotes -> straight quotes
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
-    // en/em dashes -> hyphen
+    // long dashes -> hyphen
     .replace(/[–—]/g, "-")
-    // ellipsis -> three dots
+    // ellipsis -> 3 dots
     .replace(/…/g, "...")
-    // collapse multiple spaces/tabs
+    // collapse multiple spaces
     .replace(/[ \t]{2,}/g, " ")
-    // normalize CRLF
+    // normalize line endings
     .replace(/\r\n/g, "\n")
     .trim();
 }
